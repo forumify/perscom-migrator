@@ -1,0 +1,63 @@
+<ips:template parameters="$result" />
+<div class="acpBlock">
+    <p class="acpBlock_title">Migration Result</p>
+    {{$start = \IPS\DateTime::ts($result->started);}}
+    {{$duration = $result->getDuration();}}
+    <p class="ipsPadding_horizontal">Started on {$start->localeDate()} at {$start->localeTime(true, true)} and took {$duration} seconds to complete.</p>
+    <div class="ipsSpacer_both ipsPadding_horizontal">
+        <table class="ipsTable ipsTable_responsive ipsTable_zebra">
+            <thead>
+            <tr class="ipsAreaBackground">
+                <th>Entity</th>
+                <th>Created</th>
+                <th>Skipped</th>
+                <th>Error</th>
+            </tr>
+            </thead>
+            <tbody>
+            {{foreach $result->items as $row}}
+            <tr>
+                <td class="ipsTable_wrap">{$row->entityName}</td>
+                <td>{$row->created}</td>
+                <td>{$row->skipped}</td>
+                <td>{$row->error}</td>
+            </tr>
+            {{endforeach}}
+            </tbody>
+        </table>
+    </div>
+    {{if $result->hasErrors()}}
+    <div class="ipsSpacer_both ipsPadding_horizontal">
+        <h2 class='ipsType_sectionHead'><strong><i class="fa fa-warning"></i> There were errors during the migration.</strong></h2>
+        <p class="ipsBox">
+            There were errors during the migration. Please check the output below, and check PERSCOM.io.
+            It is safe to re-run this migration as many times as needed.
+            If the error persists, <a href="https://github.com/forumify/perscom-migrator/issues">create an issue on our GitHub page</a>.
+        </p>
+        {{foreach $result->items as $item}}
+        {{if !empty($item->errorMessages)}}
+        {{if $item->entityName}}
+        <p>Errors while migrating <span class="ipsType_bold">{$item->entityName}</span>:</p>
+        {{else}}
+        <p>General errors:</p>
+        {{endif}}
+        <div class="ipsFlex ipsFlex-fd:column">
+            {{foreach $item->errorMessages as $error}}
+            <div class="ipsPadding_vertical:half">
+                <div class="ipsCode">
+                    {$error}
+                </div>
+            </div>
+            {{endforeach}}
+        </div>
+        {{endif}}
+        {{endforeach}}
+    </div>
+    {{endif}}
+    <div class="ipsFlex ipsFlex-jc:center ipsSpacer_bottom">
+        <a class="ipsButton ipsButton_primary" href="{url='app=perscommigrator&module=migrate&controller=migrate'}">
+            Back
+        </a>
+    </div>
+</div>
+

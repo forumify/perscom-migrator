@@ -1,0 +1,10 @@
+*
+
+!.gitignore
+!README.md
+!docker-compose.yml
+!constants.php
+
+!*/
+!/applications/perscommigrator/*
+!/applications/perscommigrator/**/*

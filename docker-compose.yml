@@ -1,0 +1,36 @@
+version: '3.7'
+
+services:
+  mysql:
+    image: mysql:latest
+    container_name: invision_mysql
+    ports:
+      - '3306:3306'
+    environment:
+      MYSQL_ROOT_PASSWORD: 'root'
+    volumes:
+      - database_data:/var/lib/mysql
+    restart: unless-stopped
+  mailcatcher:
+    image: schickling/mailcatcher
+    container_name: invision_mailcatcher
+    ports:
+      - '1025:1025'
+      - '1080:1080'
+    restart: unless-stopped
+  ipboard:
+    image: cmer81/ipboard:latest
+    container_name: invision_ipboard
+    ports:
+      - 80:80
+      - 443:443
+    environment:
+      - WEB_DOCUMENT_ROOT=/var/www/html
+    volumes:
+      - './:/var/www/html'
+    links:
+      - mysql
+      - mailcatcher
+
+volumes:
+  database_data:

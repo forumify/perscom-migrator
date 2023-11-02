@@ -1,0 +1,11 @@
+{
+    "migrate": {
+        "migrate": {
+            "tab": "perscommigrator",
+            "controller": "migrate",
+            "do": "",
+            "restriction": "migrate_manage",
+            "subcontrollers": ""
+        }
+    }
+}
