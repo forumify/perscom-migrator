@@ -2,6 +2,7 @@
 
 !.gitignore
 !README.md
+!LICENSE.md
 !docker-compose.yml
 !constants.php
 

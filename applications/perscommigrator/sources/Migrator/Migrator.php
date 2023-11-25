@@ -12,7 +12,7 @@ class _migrator
         $this->api = $api;
     }
 
-    public function migrate(): \IPS\perscommigrator\Migrator\MigrateResult
+    public function migrate(array $personnelFilters): \IPS\perscommigrator\Migrator\MigrateResult
     {
         $this->migrateResult = (new \IPS\perscommigrator\Migrator\MigrateResult())->start();
 
@@ -22,6 +22,7 @@ class _migrator
             $this->migrateQualifications();
             $this->migrateRanks();
             $this->migrateSpecialties();
+            $this->migrateStatuses();
         } catch (\Exception $ex) {
             $genericError = new \IPS\perscommigrator\Migrator\ResultItem('');
             $genericError->errorMessages[] = $ex->getMessage();
@@ -126,6 +127,19 @@ class _migrator
         }
     }
 
+    protected function migrateStatuses(): void
+    {
+        $existingStatuses = array_map('mb_strtolower', array_column($this->getExistingItems('statuses'), 'name'));
+        $transform = static function ($status) {
+            return [
+                'name' => $status->name,
+                'color' => 'bg-white-100 text-black-600',
+            ];
+        };
+
+        $this->migrateItems(\IPS\perscom\Personnel\Status::roots(null), 'statuses', $this->fieldNotInArray('name', $existingStatuses), $transform);
+    }
+
     protected function fieldNotInArray(string $field, array $existingValues): callable
     {
         return static function ($item) use ($field, $existingValues) {
@@ -191,7 +205,7 @@ class _migrator
 
             $items = array_merge($items, $data['data']);
             $page++;
-        } while (!empty($data['data']));
+        } while (count($data['data']) === $limit);
 
         return $items;
     }
