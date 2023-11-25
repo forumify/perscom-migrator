@@ -8,9 +8,9 @@ use IPS\Http\_Url;
 
 class _api
 {
-    protected string $apiUrl;
-    protected string $apiKey;
-    protected string $perscomId;
+    protected $apiUrl;
+    protected $apiKey;
+    protected $perscomId;
 
     public function __construct(string $apiUrl, string $apiKey, string $perscomId)
     {

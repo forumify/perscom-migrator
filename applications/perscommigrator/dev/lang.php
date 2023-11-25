@@ -11,6 +11,7 @@ $lang = array(
     'perscom_id' => 'PERSCOM ID',
     'api_url' => 'API URL',
     'api_key' => 'API Key',
+    'author_email' => 'Author email',
     'perscommigrator__migrate_personnel_filter' => 'Personnel filters',
     'status_blacklist' => 'Personnel status blacklist',
 );

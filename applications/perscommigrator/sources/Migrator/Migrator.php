@@ -4,12 +4,25 @@ namespace IPS\perscommigrator\Migrator;
 
 class _migrator
 {
-    protected \IPS\perscommigrator\Perscom\Api $api;
-    protected \IPS\perscommigrator\Migrator\MigrateResult $migrateResult;
+    /**
+     * @var \IPS\perscommigrator\Perscom\_api
+     */
+    protected $api;
+
+    /**
+     * @var _migrateResult
+     */
+    protected $migrateResult;
+
+    /**
+     * @var _perscomCache
+     */
+    protected $cache;
 
     public function __construct(\IPS\perscommigrator\Perscom\Api $api)
     {
         $this->api = $api;
+        $this->cache = new \IPS\perscommigrator\Migrator\PerscomCache();
     }
 
     public function migrate(array $personnelFilters): \IPS\perscommigrator\Migrator\MigrateResult
@@ -23,6 +36,7 @@ class _migrator
             $this->migrateRanks();
             $this->migrateSpecialties();
             $this->migrateStatuses();
+            $this->migrateUsers($personnelFilters);
         } catch (\Exception $ex) {
             $genericError = new \IPS\perscommigrator\Migrator\ResultItem('');
             $genericError->errorMessages[] = $ex->getMessage();
@@ -140,6 +154,52 @@ class _migrator
         $this->migrateItems(\IPS\perscom\Personnel\Status::roots(null), 'statuses', $this->fieldNotInArray('name', $existingStatuses), $transform);
     }
 
+    protected function migrateUsers(array $filters): void
+    {
+        $existingUsers = array_map('mb_strtolower', array_column($this->getExistingItems('users'), 'email'));
+        $statusBlacklist = array_map(static function ($status) {
+            return $status->id;
+        }, $filters['status_blacklist']);
+
+        $resultItem = new \IPS\perscommigrator\Migrator\ResultItem('users');
+
+        $usersToCreate = [];
+        foreach (\IPS\perscom\Personnel\Soldier::roots(null) as $id => $soldier) {
+            // TODO: debug, only create me :)
+            if ($soldier->id !== 418) {
+                continue;
+            }
+
+            $isStatusBlacklist = in_array($soldier->get_status()->id, $statusBlacklist, true);
+            $alreadyExist = in_array(strtolower($soldier->get_email()), $existingUsers, true);
+
+            if ($isStatusBlacklist || $alreadyExist) {
+                $resultItem->skipped++;
+                continue;
+            }
+
+            $data = [];
+            $data['name'] = $soldier->firstname . ' ' . $soldier->lastname;
+            $data['email'] = $soldier->get_email();
+            $data['email_verified_at'] = (new \DateTime())->format('Y-m-d\TH:i:s.u\Z');
+
+            $usersToCreate[$id] = $data;
+        }
+
+        die('danger zone');
+
+        $this->migrateItems(
+            $usersToCreate,
+            'users',
+            function () { return true; },
+            function ($data) { return $data; },
+            $resultItem
+        );
+
+        // Refresh user cache so we can get the IDs of the newly created users
+        $this->getExistingItems('users');
+    }
+
     protected function fieldNotInArray(string $field, array $existingValues): callable
     {
         return static function ($item) use ($field, $existingValues) {
@@ -207,6 +267,7 @@ class _migrator
             $page++;
         } while (count($data['data']) === $limit);
 
+        $this->cache->set($resource, $items);
         return $items;
     }
 }
