@@ -25,7 +25,7 @@ class _migrator
         $this->cache = new \IPS\perscommigrator\Migrator\PerscomCache();
     }
 
-    public function migrate(array $personnelFilters): \IPS\perscommigrator\Migrator\MigrateResult
+    public function migrate(string $authorEmail, array $personnelFilters): \IPS\perscommigrator\Migrator\MigrateResult
     {
         $this->migrateResult = (new \IPS\perscommigrator\Migrator\MigrateResult())->start();
 
@@ -36,7 +36,8 @@ class _migrator
             $this->migrateRanks();
             $this->migrateSpecialties();
             $this->migrateStatuses();
-            $this->migrateUsers($personnelFilters);
+            $this->migrateUnits();
+            $this->migrateUsers($authorEmail, $personnelFilters);
         } catch (\Exception $ex) {
             $genericError = new \IPS\perscommigrator\Migrator\ResultItem('');
             $genericError->errorMessages[] = $ex->getMessage();
@@ -154,9 +155,27 @@ class _migrator
         $this->migrateItems(\IPS\perscom\Personnel\Status::roots(null), 'statuses', $this->fieldNotInArray('name', $existingStatuses), $transform);
     }
 
-    protected function migrateUsers(array $filters): void
+    protected function migrateUnits(): void
+    {
+        $existingUnits = array_map('mb_strtolower', array_column($this->getExistingItems('units'), 'name'));
+        $transform = static function ($unit) {
+            return [
+                'name' => $unit->name,
+                'description' => $unit->desc,
+            ];
+        };
+
+        $this->migrateItems(\IPS\perscom\Units\CombatUnit::roots(null), 'units', $this->fieldNotInArray('name', $existingUnits), $transform, true);
+    }
+
+    protected function migrateUsers(string $authorEmail, array $filters): void
     {
         $existingUsers = array_map('mb_strtolower', array_column($this->getExistingItems('users'), 'email'));
+        $author = $this->cache->findBy('users', 'email', $authorEmail, 'strtolower');
+        if ($author === null) {
+            throw new \RuntimeException("Author with email $authorEmail does not exist. Please provide an existing PERSCOM.io user email!");
+        }
+
         $statusBlacklist = array_map(static function ($status) {
             return $status->id;
         }, $filters['status_blacklist']);
@@ -164,7 +183,8 @@ class _migrator
         $resultItem = new \IPS\perscommigrator\Migrator\ResultItem('users');
 
         $usersToCreate = [];
-        foreach (\IPS\perscom\Personnel\Soldier::roots(null) as $id => $soldier) {
+        $personnel = \IPS\perscom\Personnel\Soldier::roots(null);
+        foreach ($personnel as $id => $soldier) {
             // TODO: debug, only create me :)
             if ($soldier->id !== 418) {
                 continue;
@@ -193,11 +213,45 @@ class _migrator
             'users',
             function () { return true; },
             function ($data) { return $data; },
+            false,
             $resultItem
         );
 
-        // Refresh user cache so we can get the IDs of the newly created users
-        $this->getExistingItems('users');
+        foreach ($usersToCreate as $soldierId => $soldier) {
+            /** @var \IPS\perscom\Personnel\_Soldier $soldier */
+            $soldier = $personnel[$soldierId] ?? null;
+            if ($soldier === null) {
+                continue;
+            }
+
+            $user = $this->cache->findBy('users', 'email', $soldier->get_email(), 'strtolower');
+            if ($user === null) {
+                continue;
+            }
+
+            $assignmentRecord = [];
+            $assignmentRecord['user_id'] = $user['id'];
+            $assignmentRecord['author_id'] = $author['id'];
+            $assignmentRecord['text'] = 'Created during PERSCOM migration';
+
+            $status = $soldier->get_status();
+            if ($status !== null) {
+                $knownStatus = $this->cache->findBy('statuses', 'name', $status->name, 'strtolower');
+                if ($knownStatus !== null) {
+                    $assignmentRecord['status_id'] = $knownStatus['id'];
+                }
+            }
+
+            $combatUnit = $soldier->get_combat_unit();
+            if ($combatUnit !== null) {
+                $knownUnit = $this->cache->findBy('units', 'name', $combatUnit->name, 'strtolower');
+                if ($knownUnit !== null) {
+                    $assignmentRecord['unit_id'] = $knownUnit['id'];
+                }
+            }
+
+            $this->api->post("users/{$user['id']}/assignment-records", $assignmentRecord);
+        }
     }
 
     protected function fieldNotInArray(string $field, array $existingValues): callable
@@ -213,6 +267,7 @@ class _migrator
         string $resource,
         callable $shouldCreate,
         callable $transform,
+        bool $includeParents = false,
         $resultItem = null
     ): void {
         $toplevel = false;
@@ -224,8 +279,10 @@ class _migrator
         $itemsToCreate = [];
         foreach ($items as $item) {
             if (method_exists($item, 'children') && !empty($item->children(null))) {
-                $this->migrateItems($item->children(null), $resource, $shouldCreate, $transform, $resultItem);
-                continue;
+                $this->migrateItems($item->children(null), $resource, $shouldCreate, $transform, $includeParents, $resultItem);
+                if (!$includeParents) {
+                    continue;
+                }
             }
 
             $item = $transform($item);
@@ -249,6 +306,10 @@ class _migrator
         }
 
         if ($toplevel) {
+            if (!empty($itemsToCreate)) {
+                // update cache with newly created resources
+                $this->getExistingItems($resource);
+            }
             $this->migrateResult->items[] = $resultItem;
         }
     }

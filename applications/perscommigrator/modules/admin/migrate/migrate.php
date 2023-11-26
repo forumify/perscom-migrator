@@ -65,13 +65,14 @@ class _migrate extends \IPS\Dispatcher\Controller
             return;
         }
 
-        $apiUrl = $values['api_url'] ?? '';
-        $apiKey = $values['api_key'] ?? '';
-        $perscomId = $values['perscom_id'] ?? '';
+        $apiUrl = $values['api_url'];
+        $apiKey = $values['api_key'];
+        $perscomId = $values['perscom_id'];
+        $authorEmail = $values['author_email'];
 
         $api = new \IPS\perscommigrator\Perscom\Api($apiUrl, $apiKey, $perscomId);
         $migrator = new \IPS\perscommigrator\Migrator\Migrator($api);
-        $result = $migrator->migrate([
+        $result = $migrator->migrate($authorEmail, [
             'status_blacklist' => $values['status_blacklist'] ?: [],
         ]);
 

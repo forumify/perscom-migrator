@@ -1,7 +1,31 @@
 <ips:template parameters="$form" />
 <div class="acpBlock ipsSpacer_bottom">
-    <p class="acpBlock_title">Instructions</p>
+    <p class="acpBlock_title">Information</p>
     <div class="ipsPadding_horizontal">
+        <p>The aim of PERSCOM Migrator is to copy over as much data as possible, but due to incompatibilities between the two platforms, this is not always possible. Check the list below for more information.</p>
+        <h4>What will be migrated?</h4>
+        <ul>
+            <li><i class="fa fa-check"></i> Awards</li>
+            <li><i class="fa fa-check"></i> Ranks</li>
+            <li><i class="fa fa-check"></i> Combat Positions</li>
+            <li><i class="fa fa-check"></i> Administrative Positions</li>
+            <li><i class="fa fa-check"></i> Administrative Units (Specialties)</li>
+            <li><i class="fa fa-check"></i> Combat Units</li>
+            <li><i class="fa fa-check"></i> Status</li>
+            <li><i class="fa fa-check"></i> Users</li>
+            <li><i class="fa fa-check"></i> Combat Records</li>
+            <li><i class="fa fa-check"></i> Qualification Records</li>
+            <li><i class="fa fa-check"></i> Service Records
+                <ul>
+                    <li><i class="fa fa-warning"></i> No differentiation will be made between pro/demotions, awards,... All will be created as a service record.</li>
+                </ul>
+            </li>
+            <li><i class="fa fa-remove"></i> Assignment Records
+                <ul>
+                    <li><i class="fa fa-warning"></i> Only the latest assignment state will be migrated.</li>
+                </ul>
+            </li>
+        </ul>
         <h4>Prevent PERSCOM.io from sending emails</h4>
         <ol>
             <li>On PERSCOM.io go to "System" > "Settings",</li>
