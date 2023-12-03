@@ -30,7 +30,7 @@ class _api
             ? $request->$method(is_array($args[1]) ? json_encode($args[1], JSON_THROW_ON_ERROR) : $args[1])
             : $request->$method();
 
-        sleep(1); // artificially slow down requests to prevent rate limit issues
+        usleep(600);
 
         if ($response->httpResponseCode >= 400) {
             throw new \RuntimeException('Error in API request: ' . $response->content);
@@ -48,7 +48,7 @@ class _api
             'Content-Type' => 'application/json',
             'Accept' => 'application/json',
             'Authorization' => 'Bearer ' . $this->apiKey,
-            'X-Perscom-Id' => $this->perscomId
+            'X-Perscom-Id' => $this->perscomId,
         ]);
 
         return $request;
