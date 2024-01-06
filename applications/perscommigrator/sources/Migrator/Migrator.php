@@ -150,7 +150,7 @@ class _migrator
         $transform = static function ($status) {
             return [
                 'name' => $status->name,
-                'color' => 'bg-white-100 text-black-600',
+                'color' => 'bg-white-100 text-black-600', // TODO: change to hex
             ];
         };
 
@@ -188,11 +188,6 @@ class _migrator
         $personnel = \IPS\perscom\Personnel\Soldier::roots(null);
         /** @var \IPS\perscom\Personnel\_Soldier $soldier */
         foreach ($personnel as $id => $soldier) {
-            // TODO: debug, only create me :)
-            if ($soldier->id !== 418) {
-                continue;
-            }
-
             $isStatusBlacklist = in_array($soldier->get_status()->id, $statusBlacklist, true);
             $alreadyExist = in_array(strtolower($soldier->get_email()), $existingUsers, true);
 
@@ -243,11 +238,6 @@ class _migrator
             /** @var \IPS\perscom\Personnel\_Soldier $soldier */
             $soldier = $findSoldier($user['email']);
             if ($soldier === null || $user['status_id'] !== null) {
-                continue;
-            }
-
-            // TODO: debug, only create me :)
-            if ($soldier->id !== 418) {
                 continue;
             }
 

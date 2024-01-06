@@ -49,6 +49,7 @@ class _api
             'Accept' => 'application/json',
             'Authorization' => 'Bearer ' . $this->apiKey,
             'X-Perscom-Id' => $this->perscomId,
+            'X-Perscom-Notifications' => 'false',
         ]);
 
         return $request;
