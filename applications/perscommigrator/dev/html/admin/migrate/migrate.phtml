@@ -1,37 +1,78 @@
 <ips:template parameters="$form" />
 <div class="acpBlock ipsSpacer_bottom">
     <p class="acpBlock_title">Information</p>
-    <div class="ipsPadding_horizontal">
-        <p>The aim of PERSCOM Migrator is to copy over as much data as possible, but due to incompatibilities between the two platforms, this is not always possible. Check the list below for more information.</p>
+    <div class="ipsPadding_horizontal ipsSpacer_bottom">
+        {{$pluginLink = 'https://github.com/forumify/forumify-perscom-plugin';}}
+        <p><i class="fa fa-warning"></i> Attention PERSCOM User <i class="fa fa-warning"></i></p>
+        <p>Migrating to PERSCOM.io cloud? Great! For a smoother transition, here's what you need to know:</p>
+        <p>This migrator specifically targets usage of PERSCOM.io in combination with <a href="https://forumify.net" target="_blank">forumify</a> and their free <a href="{$pluginLink}" target="_blank">PERSCOM.io Integration plugin</a>.</p>
+        <ol>
+            <li>
+                <p class="ipsType_bold">Serialized Data Warning:</p>
+                <ul>
+                    <li>
+                        Fields might contain serialized data to provide additional features in the <a href="{$pluginLink}" target="_blank">forumify plugin</a>.
+                    </li>
+                </ul>
+            </li>
+            <li>
+                <p class="ipsType_bold">Field Misuse:</p>
+                <ul>
+                    <li>
+                        Some data will be entered in unrelated PERSCOM.io fields for backwards compatibility. Again, for the best result use the free <a href="{$pluginLink}" target="_blank">forumify plugin</a>!
+                    </li>
+                </ul>
+            </li>
+            <li>
+                <p class="ipsType_bold">PERSCOM.io Preparation:</p>
+                <ul>
+                    <li>
+                        For the best results, if you have previously set up any data, please delete it. Only keep an admin user. If this admin user's email is the same as a PERSCOM user's email, you will have to migrate some data manually.
+                    </li>
+                </ul>
+            </li>
+        </ol>
         <h4>What will be migrated?</h4>
-        <ul>
+        <ul class="ipsList_reset">
             <li><i class="fa fa-check"></i> Awards</li>
             <li><i class="fa fa-check"></i> Ranks</li>
             <li><i class="fa fa-check"></i> Combat Positions</li>
             <li><i class="fa fa-check"></i> Administrative Positions</li>
-            <li><i class="fa fa-check"></i> Administrative Units (Specialties)</li>
+            <li><i class="fa fa-check"></i> Administrative Units</li>
             <li><i class="fa fa-check"></i> Combat Units</li>
+            <li><i class="fa fa-check"></i> Rosters</li>
             <li><i class="fa fa-check"></i> Status</li>
             <li><i class="fa fa-check"></i> Users</li>
             <li><i class="fa fa-check"></i> Combat Records</li>
+            <li><i class="fa fa-check"></i> Assignment Records</li>
             <li><i class="fa fa-check"></i> Qualification Records</li>
-            <li><i class="fa fa-check"></i> Service Records
+            <li><i class="fa fa-check"></i> Service Records</li>
+            <li><i class="fa fa-remove"></i> Custom Fields
                 <ul>
-                    <li><i class="fa fa-warning"></i> No differentiation will be made between pro/demotions, awards,... All will be created as a service record.</li>
+                    <li>Not available in the PERSCOM.io API</li>
                 </ul>
             </li>
-            <li><i class="fa fa-remove"></i> Assignment Records
+            <li><i class="fa fa-remove"></i> Images
                 <ul>
-                    <li><i class="fa fa-warning"></i> Only the latest assignment state will be migrated.</li>
+                    <li>Not available in the PERSCOM.io API</li>
+                </ul>
+            </li>
+            <li><i class="fa fa-remove"></i> Activity Tracker
+                <ul>
+                    <li>Feature no longer exists in PERSCOM.io</li>
+                </ul>
+            </li>
+            <li><i class="fa fa-remove"></i> Supervisor
+                <ul>
+                    <li>Feature no longer exists in PERSCOM.io</li>
+                </ul>
+            </li>
+            <li><i class="fa fa-remove"></i> Weapons
+                <ul>
+                    <li>Feature no longer exists in PERSCOM.io</li>
                 </ul>
             </li>
         </ul>
-        <h4>Prevent PERSCOM.io from sending emails</h4>
-        <ol>
-            <li>On PERSCOM.io go to "System" > "Settings",</li>
-            <li>Navigate to "Registration" tab,</li>
-            <li>Turn off "Admin Approval Required".</li>
-        </ol>
     </div>
 </div>
 {$form|raw}

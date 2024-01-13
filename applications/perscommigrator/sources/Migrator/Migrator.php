@@ -112,20 +112,12 @@ class _migrator
     protected function migrateSpecialties(): void
     {
         $specialties = [];
-        foreach (\IPS\perscom\Units\AdministrativeUnitPosition::roots(null) as $position) {
-            $specialties[$position->mos] = [
-                'name' => $position->mos . ' - ' . $position->name,
-                'abbreviation' => $position->mos,
-            ];
-        }
-
         foreach (\IPS\perscom\Personnel\Soldier::roots(null) as $soldier) {
             $specialties[$soldier->mos] = [
                 'name' => $soldier->mos,
                 'abbreviation' => $soldier->mos,
             ];
         }
-
 
         $existing = array_map('mb_strtolower', array_column($this->getExistingItems('specialties'), 'abbreviation'));
         $specialtiesToCreate = [];
@@ -150,7 +142,8 @@ class _migrator
         $transform = static function ($status) {
             return [
                 'name' => $status->name,
-                'color' => 'bg-white-100 text-black-600', // TODO: change to hex
+                'bg_color' => $status->hex_color,
+                'text_color' => '#ffffff',
             ];
         };
 
@@ -188,6 +181,11 @@ class _migrator
         $personnel = \IPS\perscom\Personnel\Soldier::roots(null);
         /** @var \IPS\perscom\Personnel\_Soldier $soldier */
         foreach ($personnel as $id => $soldier) {
+            // TODO: debug, only create me :)
+            if ($soldier->id !== 418) {
+                continue;
+            }
+
             $isStatusBlacklist = in_array($soldier->get_status()->id, $statusBlacklist, true);
             $alreadyExist = in_array(strtolower($soldier->get_email()), $existingUsers, true);
 
@@ -205,18 +203,14 @@ class _migrator
                 $data['created_at'] = $soldier->get_induction_date()->format(self::DATE_FORMAT);
             }
 
-
             $usersToCreate[$id] = $data;
         }
-
-        $alwaysTrue = static function () { return true; };
-        $identity = static function ($data) { return $data; };
 
         $this->migrateItems(
             $usersToCreate,
             'users',
-            $alwaysTrue,
-            $identity,
+            [$this, 'alwaysTrue'],
+            [$this, 'identity'],
             false,
             $resultItem
         );
@@ -232,8 +226,13 @@ class _migrator
             return null;
         };
 
+        $serviceRecordsToCreate = [];
+        $awardRecordsToCreate = [];
         $rankRecordsToCreate = [];
         $assignmentRecordsToCreate = [];
+        $combatRecordsToCreate = [];
+        $qualificationRecordsToCreate = [];
+
         foreach ($this->cache->get('users') as $user) {
             /** @var \IPS\perscom\Personnel\_Soldier $soldier */
             $soldier = $findSoldier($user['email']);
@@ -241,116 +240,185 @@ class _migrator
                 continue;
             }
 
-            if ($assignmentRecord = $this->getAssignmentRecordToCreate($user, $soldier, $author)) {
-                $assignmentRecordsToCreate[] = $assignmentRecord;
+            // TODO: debug, only create me :)
+            if ($soldier->id !== 418) {
+                continue;
             }
 
-            if ($rankRecord = $this->getRankRecordToCreate($user, $soldier, $author)) {
-                $rankRecordsToCreate[] = $rankRecord;
+            foreach (\IPS\perscom\Records\Assignment::roots(null, null, ['assignment_records_soldier=?', $soldier->id]) as $assignmentRecord) {
+                $assignmentRecordsToCreate[] = $this->transformAssignmentRecord($assignmentRecord, $user['id'], $author['id']);
             }
+
+            foreach (\IPS\perscom\Records\Service::roots(null, null, ['service_records_soldier=?', $soldier->id]) as $serviceRecord) {
+                $record = $this->transformServiceRecord($serviceRecord, $user['id'], $author['id']);
+
+                switch ($record['record_type']) {
+                    case 'rank':
+                        unset($record['record_type']);
+                        $rankRecordsToCreate[] = $record;
+                        break;
+                    case 'award':
+                        unset($record['record_type']);
+                        $awardRecordsToCreate[] = $record;
+                        break;
+                    case 'service':
+                    default:
+                        unset($record['record_type']);
+                        $serviceRecordsToCreate[] = $record;
+                }
+            }
+
+            /** @var \IPS\perscom\Records\_Combat $combatRecord */
+            foreach (\IPS\perscom\Records\Combat::roots(null, null, ['combat_records_soldier=?', $soldier->id]) as $combatRecord) {
+                $record = [
+                    'user_id' => $user['id'],
+                    'author_id' => $author['id'],
+                    'text' => $combatRecord->text,
+                ];
+
+                if ($createdAt = $combatRecord->get_date()) {
+                    $record['created_at'] = $createdAt->format(self::DATE_FORMAT);
+                }
+
+                $combatRecordsToCreate[] = $record;
+            }
+
+            foreach (\IPS\perscom\Qualifications\Record::roots(null, null, ['qualification_records_soldier=?', $soldier->id]) as $qualRecord) {
+                $record = $this->transformQualificationRecord($qualRecord, $user['id'], $author['id']);
+                if ($record !== null) {
+                    $qualificationRecordsToCreate[] = $record;
+                }
+            }
+
+            // TODO: link specialty (MOS)
         }
 
-        $this->migrateItems(
-            $assignmentRecordsToCreate,
-            'assignment-records',
-            $alwaysTrue,
-            $identity,
-        );
+        $this->migrateRecords($serviceRecordsToCreate, 'service');
+        $this->migrateRecords($awardRecordsToCreate, 'award');
+        $this->migrateRecords($assignmentRecordsToCreate, 'assignment');
+        $this->migrateRecords($rankRecordsToCreate, 'rank');
+        $this->migrateRecords($combatRecordsToCreate, 'combat');
+        $this->migrateRecords($qualificationRecordsToCreate, 'qualification');
+    }
 
+    private function migrateRecords(array $records, string $type): void
+    {
         $this->migrateItems(
-            $rankRecordsToCreate,
-            'rank-records',
-            $alwaysTrue,
-            $identity,
+            $records,
+            $type . '-records',
+            [$this, 'alwaysTrue'],
+            [$this, 'identity'],
         );
     }
 
     /**
-     * @param array $user
-     * @param \IPS\perscom\Personnel\_Soldier $soldier
-     * @param array $author
-     * @return array|null
+     * @param \IPS\perscom\Records\_Assignment $assignmentRecord
      */
-    private function getAssignmentRecordToCreate(array $user, $soldier, array $author)
+    private function transformAssignmentRecord($assignmentRecord, $userId, $authorId): array
     {
-        if ($user['status_id'] !== null) {
-            // already has an assignment
-            return null;
+        $record = [];
+        $record['user_id'] = $userId;
+        $record['author_id'] = $authorId;
+        if ($createdAt = $assignmentRecord->get_date()) {
+            $record['created_at'] = $createdAt->format(self::DATE_FORMAT);
         }
 
-        $assignmentRecord = [];
-        $assignmentRecord['user_id'] = $user['id'];
-        $assignmentRecord['author_id'] = $author['id'];
-
-        $lastAssignmentDate = iterator_to_array(\IPS\Db::i()->select(
-            'assignment_records_date',
-            'perscom_assignment_records',
-            ['assignment_records_soldier=?', $soldier->id],
-            'assignment_records_date DESC',
-            1
-        ));
-
-        $lastAssignmentDateValue = reset($lastAssignmentDate);
-        if ($lastAssignmentDateValue !== false) {
-            $assignmentRecord['created_at'] = \IPS\DateTime::ts($lastAssignmentDateValue, true)->format(self::DATE_FORMAT);
+        if ($unit = $assignmentRecord->get_to()) {
+            $knownUnit = $this->cache->findBy('units', 'name', $unit->name, 'strtolower');
+            if ($knownUnit !== null) {
+                $record['unit_id'] = $knownUnit['id'];
+            }
         }
 
-        $status = $soldier->get_status();
-        if ($status !== null) {
+        if ($position = $assignmentRecord->get_position()) {
+            $knownPosition = $this->cache->findBy('positions', 'name', $position->name, 'strtolower');
+            if ($knownPosition !== null) {
+                $record['position_id'] = $knownPosition['id'];
+            }
+        }
+
+        if ($status = $assignmentRecord->get_status()) {
             $knownStatus = $this->cache->findBy('statuses', 'name', $status->name, 'strtolower');
             if ($knownStatus !== null) {
-                $assignmentRecord['status_id'] = $knownStatus['id'];
+                $record['status_id'] = $knownStatus['id'];
             }
         }
 
-        $combatUnit = $soldier->get_combat_unit();
-        if ($combatUnit !== null) {
-            $knownUnit = $this->cache->findBy('units', 'name', $combatUnit->name, 'strtolower');
-            if ($knownUnit !== null) {
-                $assignmentRecord['unit_id'] = $knownUnit['id'];
-            }
-        }
-
-        // TODO: specialty and positions
-
-        return $assignmentRecord;
+        return $record;
     }
 
     /**
-     * @param array $user
-     * @param \IPS\perscom\Personnel\_Soldier $soldier
-     * @param array $author
-     * @return array|null
+     * @param \IPS\perscom\Records\_Service $serviceRecord
      */
-    private function getRankRecordToCreate(array $user, $soldier, array $author)
+    private function transformServiceRecord($serviceRecord, $userId, $authorId): array
     {
-        if ($user['rank_id'] !== null) {
-            // already has a rank
+        $record = [];
+        $record['user_id'] = $userId;
+        $record['author_id'] = $authorId;
+        if ($createdAt = $serviceRecord->get_date()) {
+            $record['created_at'] = $createdAt->format(self::DATE_FORMAT);
+        }
+        $record['text'] = $serviceRecord->text;
+        $record['record_type'] = 'service';
+
+        if (!$serviceRecord->item_id) {
+            return $record;
+        }
+
+        $type = (string)$serviceRecord->action;
+        if ($type === \IPS\perscom\Records\Service::SERVICE_RECORD_AWARD) {
+            try {
+                $ipsAward = \IPS\perscom\Awards\Award::load($serviceRecord->item_id);
+                if ($award = $this->cache->findBy('awards', 'name', $ipsAward->name, 'strtolower')) {
+                    $record['record_type'] = 'award';
+                    $record['award_id'] = $award['id'];
+                }
+            } catch (\Exception $ex) {
+                // skip
+            }
+        }
+
+        if ($type === \IPS\perscom\Records\Service::SERVICE_RECORD_PROMOTION
+            || $type === \IPS\perscom\Records\Service::SERVICE_RECORD_DEMOTION) {
+            try {
+                $ipsRank = \IPS\perscom\Ranks\Rank::load($serviceRecord->item_id);
+                if ($rank = $this->cache->findBy('ranks', 'name', $ipsRank->name, 'strtolower')) {
+                    $record['record_type'] = 'rank';
+                    $record['type'] = $type === \IPS\perscom\Records\Service::SERVICE_RECORD_PROMOTION ? 0 : 1;
+                    $record['rank_id'] = $rank['id'];
+                }
+            } catch (\Exception $ex) {
+                // skip
+            }
+        }
+
+        return $record;
+    }
+
+    /**
+     * @param \IPS\perscom\Qualifications\_Record $qualificationRecord
+     */
+    private function transformQualificationRecord($qualificationRecord, $userId, $authorId): ?array
+    {
+        $record = [];
+        $record['user_id'] = $userId;
+        $record['author_id'] = $authorId;
+        if ($createdAt = $qualificationRecord->get_date()) {
+            $record['created_at'] = $createdAt->format(self::DATE_FORMAT);
+        }
+
+        $ipsQualification = $qualificationRecord->get_qualification();
+        if ($ipsQualification === null) {
             return null;
         }
 
-        $rank = $soldier->get_rank();
-        if ($rank === null) {
+        $qualification = $this->cache->findBy('qualifications', 'name', $ipsQualification->name, 'strtolower');
+        if ($qualification === null) {
             return null;
         }
 
-        $knownRank = $this->cache->findBy('ranks', 'name', $rank->name, 'strtolower');
-        if ($knownRank === null) {
-            return null;
-        }
-
-        $rankRecord = [];
-        $rankRecord['user_id'] = $user['id'];
-        $rankRecord['rank_id'] = $knownRank['id'];
-        $rankRecord['author_id'] = $author['id'];
-        $rankRecord['type'] = 0;
-
-        $created = $soldier->get_promotion_date();
-        if ($created !== null) {
-            $rankRecord['created_at'] = $created->format(self::DATE_FORMAT);
-        }
-
-        return $rankRecord;
+        $record['qualification_id'] = $qualification['id'];
+        return $record;
     }
 
     protected function fieldNotInArray(string $field, array $existingValues): callable
@@ -394,9 +462,11 @@ class _migrator
 
         if (!empty($itemsToCreate)) {
             try {
-                $this->api->post($resource . '/batch', [
-                    'resources' => $itemsToCreate,
-                ]);
+                foreach (array_chunk($itemsToCreate, 1000) as $chunk) {
+                    $this->api->post($resource . '/batch', [
+                        'resources' => $chunk,
+                    ]);
+                }
                 $resultItem->created += count($itemsToCreate);
             } catch (\Exception $ex) {
                 $resultItem->error += count($itemsToCreate);
@@ -429,5 +499,16 @@ class _migrator
 
         $this->cache->set($resource, $items);
         return $items;
+    }
+
+    // some helper functions
+    protected function alwaysTrue(): bool
+    {
+        return true;
+    }
+
+    protected function identity($data)
+    {
+        return $data;
     }
 }

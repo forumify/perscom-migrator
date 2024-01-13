@@ -4,6 +4,7 @@
     {{$start = \IPS\DateTime::ts($result->started);}}
     {{$duration = $result->getDuration();}}
     <p class="ipsPadding_horizontal">Started on {$start->localeDate()} at {$start->localeTime(true, true)} and took {$duration} seconds to complete.</p>
+    <p class="ipsPadding_horizontal">Memory used: {{$memory = floor(memory_get_peak_usage() / 1000000);}}{$memory} MB.</p>
     <div class="ipsSpacer_both ipsPadding_horizontal">
         <table class="ipsTable ipsTable_responsive ipsTable_zebra">
             <thead>
@@ -16,62 +17,56 @@
             </thead>
             <tbody>
             {{foreach $result->items as $row}}
-            <tr>
-                <td class="ipsTable_wrap">{$row->entityName}</td>
-                <td>{$row->created}</td>
-                <td>{$row->skipped}</td>
-                <td>{$row->error}</td>
-            </tr>
+                <tr>
+                    <td class="ipsTable_wrap">{$row->entityName}</td>
+                    <td>{$row->created}</td>
+                    <td>{$row->skipped}</td>
+                    <td>{$row->error}</td>
+                </tr>
             {{endforeach}}
             </tbody>
         </table>
     </div>
     {{if $result->hasErrors()}}
-    <div class="ipsSpacer_both ipsPadding_horizontal">
-        <h2 class='ipsType_sectionHead'><strong><i class="fa fa-warning"></i> There were errors during the migration.</strong></h2>
-        <p class="ipsBox">
-            There were errors during the migration. Please check the output below, and check PERSCOM.io.
-            It is safe to re-run this migration as many times as needed.
-            If the error persists, <a href="https://github.com/forumify/perscom-migrator/issues">create an issue on our GitHub page</a>.
-        </p>
-        {{foreach $result->items as $item}}
-        {{if !empty($item->errorMessages)}}
-        {{if $item->entityName}}
-        <p>Errors while migrating <span class="ipsType_bold">{$item->entityName}</span>:</p>
-        {{else}}
-        <p>General errors:</p>
-        {{endif}}
-        <div class="ipsFlex ipsFlex-fd:column">
-            {{foreach $item->errorMessages as $error}}
-            <div class="ipsPadding_vertical:half">
-                <div class="ipsCode">
-                    {$error}
-                </div>
-            </div>
+        <div class="ipsSpacer_both ipsPadding_horizontal">
+            <h2 class='ipsType_sectionHead'><strong><i class="fa fa-warning"></i> There were errors during the migration.</strong></h2>
+            <p class="ipsBox">
+                There were errors during the migration. Please check the output below, and check PERSCOM.io.
+                It is safe to re-run this migration as many times as needed.
+                If the error persists, <a href="https://github.com/forumify/perscom-migrator/issues">create an issue on our GitHub page</a>.
+            </p>
+            {{foreach $result->items as $item}}
+                {{if !empty($item->errorMessages)}}
+                    {{if $item->entityName}}
+                        <p>Errors while migrating <span class="ipsType_bold">{$item->entityName}</span>:</p>
+                    {{else}}
+                        <p>General errors:</p>
+                    {{endif}}
+                    <div class="ipsFlex ipsFlex-fd:column">
+                        {{foreach $item->errorMessages as $error}}
+                            <div class="ipsPadding_vertical:half">
+                                <div class="ipsCode">
+                                    {$error}
+                                </div>
+                            </div>
+                        {{endforeach}}
+                    </div>
+                {{endif}}
             {{endforeach}}
         </div>
-        {{endif}}
-        {{endforeach}}
-    </div>
     {{else}}
-    <div class="ipsSpacer_both ipsPadding_horizontal">
-        <h2 class='ipsType_sectionHead'><strong><i class="fa fa-info"></i> What's next?</strong></h2>
-        <div class="ipsBox">
-            <p>
-                Your data has now been migrated to PERSCOM.io. If you decide to continue using Invision for some time, you can re-run this migration on a later date, and it will only create items that are not yet present on PERSCOM.io.
-                However, keep in mind that <strong>changes</strong> and <strong>deletes</strong> to existing items will have to be done on both systems simultaneously.
-                We recommend doing all changes on both platforms simultaneously for some time to get you and your staff familiar with PERSCOM.io.
-            </p>
-            <p>There are a couple of things that we were unable to migrate and need manual intervention or at least double-checking, you can find the list of manual actions below:</p>
-            <ul>
-                <li>Forms & submissions; Forms such as <strong>Applications</strong> and <strong>Personal Actions</strong> relied heavily on the Invision forms system, and thus could not be migrated to PERSCOM.io.</li>
-                <li>Documents; Invision documents have different variables than PERSCOM.io ones. We advise recreating all documents and attaching them where needed.</li>
-                <li>Images; You are still required to upload images for ranks, qualifications, etc.</li>
-                <li>Status colors; PERSCOM.io uses a different color system, so status colors will have to be reconfigured.</li>
-                <li>Sorting; Positions of entities could not be copied over. While the order in which entities are created are according to the Invision position, there might be discrepancies.</li>
-            </ul>
+        <div class="ipsSpacer_both ipsPadding_horizontal">
+            <h2 class='ipsType_sectionHead'><strong><i class="fa fa-info"></i> What's next?</strong></h2>
+            <div class="ipsBox">
+                <p>
+                    Your data has now been migrated to PERSCOM.io.
+                    We recommend performing all changes on both platforms simultaneously for some time to get you and your staff familiar with PERSCOM.io.
+                </p>
+                <p>
+                    Remember to check out <a href="https://forumify.net">forumify</a> if you are also looking for a replacement for Invision Community.
+                </p>
+            </div>
         </div>
-    </div>
     {{endif}}
 
     <div class="ipsFlex ipsFlex-jc:center ipsSpacer_bottom">
