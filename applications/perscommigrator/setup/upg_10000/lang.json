@@ -1,0 +1,26 @@
+{
+    "normal": {
+        "added": [
+            "__app_perscommigrator",
+            "menutab__perscommigrator",
+            "menutab__perscommigrator_icon",
+            "menu__perscommigrator_migrate",
+            "menu__perscommigrator_migrate_migrate",
+            "perscommigrator__migrate",
+            "perscommigrator__migrate_credentials_header",
+            "perscom_id",
+            "api_url",
+            "api_key",
+            "author_email",
+            "perscommigrator__migrate_personnel_filter",
+            "status_blacklist"
+        ],
+        "edited": [],
+        "removed": []
+    },
+    "js": {
+        "added": [],
+        "edited": [],
+        "removed": []
+    }
+}

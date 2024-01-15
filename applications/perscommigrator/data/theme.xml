@@ -1,0 +1,164 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<theme name="Default" author_name="Invision Power Services, Inc" author_url="https://www.invisioncommunity.com">
+ <template template_group="migrate" template_name="migrate" template_data="$form" template_location="admin" template_app="perscommigrator"><![CDATA[<div class="acpBlock ipsSpacer_bottom">
+    <p class="acpBlock_title">Information</p>
+    <div class="ipsPadding_horizontal ipsSpacer_bottom">
+        {{$pluginLink = 'https://github.com/forumify/forumify-perscom-plugin';}}
+        <p><i class="fa fa-warning"></i> Attention PERSCOM User <i class="fa fa-warning"></i></p>
+        <p>Migrating to PERSCOM.io cloud? Great! For a smoother transition, here's what you need to know:</p>
+        <p>This migrator specifically targets usage of PERSCOM.io in combination with <a href="https://forumify.net" target="_blank">forumify</a> and their free <a href="{$pluginLink}" target="_blank">PERSCOM.io Integration plugin</a>.</p>
+        <ol>
+            <li>
+                <p class="ipsType_bold">Serialized Data Warning:</p>
+                <ul>
+                    <li>
+                        Fields might contain serialized data to provide additional features in the <a href="{$pluginLink}" target="_blank">forumify plugin</a>.
+                    </li>
+                </ul>
+            </li>
+            <li>
+                <p class="ipsType_bold">Field Misuse:</p>
+                <ul>
+                    <li>
+                        Some data will be entered in unrelated PERSCOM.io fields for backwards compatibility. Again, for the best result use the free <a href="{$pluginLink}" target="_blank">forumify plugin</a>!
+                    </li>
+                </ul>
+            </li>
+            <li>
+                <p class="ipsType_bold">PERSCOM.io Preparation:</p>
+                <ul>
+                    <li>
+                        For the best results, if you have previously set up any data, please delete it. Only keep an admin user. If this admin user's email is the same as a PERSCOM user's email, you will have to migrate some data manually.
+                    </li>
+                </ul>
+            </li>
+        </ol>
+        <h4>What will be migrated?</h4>
+        <ul class="ipsList_reset">
+            <li><i class="fa fa-check"></i> Awards</li>
+            <li><i class="fa fa-check"></i> Ranks</li>
+            <li><i class="fa fa-check"></i> Combat Positions</li>
+            <li><i class="fa fa-check"></i> Administrative Positions</li>
+            <li><i class="fa fa-check"></i> Administrative Units</li>
+            <li><i class="fa fa-check"></i> Combat Units</li>
+            <li><i class="fa fa-check"></i> Rosters</li>
+            <li><i class="fa fa-check"></i> Status</li>
+            <li><i class="fa fa-check"></i> Users</li>
+            <li><i class="fa fa-check"></i> Combat Records</li>
+            <li><i class="fa fa-check"></i> Assignment Records</li>
+            <li><i class="fa fa-check"></i> Qualification Records</li>
+            <li><i class="fa fa-check"></i> Service Records</li>
+            <li><i class="fa fa-warning"></i> Rosters
+                <ul>
+                    <li>You will have to manually link units to their group as this is not available in the PERSCOM.io API</li>
+                </ul>
+            </li>
+            <li><i class="fa fa-remove"></i> Custom Fields
+                <ul>
+                    <li>Not available in the PERSCOM.io API</li>
+                </ul>
+            </li>
+            <li><i class="fa fa-remove"></i> Images
+                <ul>
+                    <li>Not available in the PERSCOM.io API</li>
+                </ul>
+            </li>
+            <li><i class="fa fa-remove"></i> Activity Tracker
+                <ul>
+                    <li>Feature no longer exists in PERSCOM.io</li>
+                </ul>
+            </li>
+            <li><i class="fa fa-remove"></i> Supervisor
+                <ul>
+                    <li>Feature no longer exists in PERSCOM.io</li>
+                </ul>
+            </li>
+            <li><i class="fa fa-remove"></i> Weapons
+                <ul>
+                    <li>Feature no longer exists in PERSCOM.io</li>
+                </ul>
+            </li>
+        </ul>
+    </div>
+</div>
+{$form|raw}
+]]></template>
+ <template template_group="migrate" template_name="migrateComplete" template_data="$result" template_location="admin" template_app="perscommigrator"><![CDATA[<div class="acpBlock">
+    <p class="acpBlock_title">Migration Result</p>
+    {{$start = \IPS\DateTime::ts($result->started);}}
+    {{$duration = $result->getDuration();}}
+    <p class="ipsPadding_horizontal">Started on {$start->localeDate()} at {$start->localeTime(true, true)} and took {$duration} seconds to complete.</p>
+    <p class="ipsPadding_horizontal">Memory used: {{$memory = floor(memory_get_peak_usage() / 1000000);}}{$memory} MB.</p>
+    <div class="ipsSpacer_both ipsPadding_horizontal">
+        <table class="ipsTable ipsTable_responsive ipsTable_zebra">
+            <thead>
+            <tr class="ipsAreaBackground">
+                <th>Entity</th>
+                <th>Created</th>
+                <th>Skipped</th>
+                <th>Error</th>
+            </tr>
+            </thead>
+            <tbody>
+            {{foreach $result->items as $row}}
+                <tr>
+                    <td class="ipsTable_wrap">{$row->entityName}</td>
+                    <td>{$row->created}</td>
+                    <td>{$row->skipped}</td>
+                    <td>{$row->error}</td>
+                </tr>
+            {{endforeach}}
+            </tbody>
+        </table>
+    </div>
+    {{if $result->hasErrors()}}
+        <div class="ipsSpacer_both ipsPadding_horizontal">
+            <h2 class='ipsType_sectionHead'><strong><i class="fa fa-warning"></i> There were errors during the migration.</strong></h2>
+            <p class="ipsBox">
+                There were errors during the migration. Please check the output below, and check PERSCOM.io.
+                It is safe to re-run this migration as many times as needed.
+                If the error persists, <a href="https://github.com/forumify/perscom-migrator/issues">create an issue on our GitHub page</a>.
+            </p>
+            {{foreach $result->items as $item}}
+                {{if !empty($item->errorMessages)}}
+                    {{if $item->entityName}}
+                        <p>Errors while migrating <span class="ipsType_bold">{$item->entityName}</span>:</p>
+                    {{else}}
+                        <p>General errors:</p>
+                    {{endif}}
+                    <div class="ipsFlex ipsFlex-fd:column">
+                        {{foreach $item->errorMessages as $error}}
+                            <div class="ipsPadding_vertical:half">
+                                <div class="ipsCode">
+                                    {$error}
+                                </div>
+                            </div>
+                        {{endforeach}}
+                    </div>
+                {{endif}}
+            {{endforeach}}
+        </div>
+    {{else}}
+        <div class="ipsSpacer_both ipsPadding_horizontal">
+            <h2 class='ipsType_sectionHead'><strong><i class="fa fa-info"></i> What's next?</strong></h2>
+            <div class="ipsBox">
+                <p>
+                    Your data has now been migrated to PERSCOM.io.
+                    We recommend performing all changes on both platforms simultaneously for some time to get you and your staff familiar with PERSCOM.io.
+                </p>
+                <p>
+                    Remember to check out <a href="https://forumify.net">forumify</a> if you are also looking to replace Invision Community.
+                </p>
+            </div>
+        </div>
+    {{endif}}
+
+    <div class="ipsFlex ipsFlex-jc:center ipsSpacer_bottom">
+        <a class="ipsButton ipsButton_primary" href="{url='app=perscommigrator&module=migrate&controller=migrate'}">
+            Back
+        </a>
+    </div>
+</div>
+
+]]></template>
+</theme>
