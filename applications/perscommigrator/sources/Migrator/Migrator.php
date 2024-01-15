@@ -39,6 +39,7 @@ class _migrator
             $this->migrateSpecialties();
             $this->migrateStatuses();
             $this->migrateUnits();
+            $this->migrateRosters();
             $this->migrateUsers($authorEmail, $personnelFilters);
         } catch (\Exception $ex) {
             $genericError = new \IPS\perscommigrator\Migrator\ResultItem('');
@@ -68,7 +69,7 @@ class _migrator
         $transform = static function ($position) {
             $prefix = '';
             if ($position instanceof \IPS\perscom\Units\AdministrativeUnitPosition) {
-                $prefix = $position->get_unit()->name . ' - ';
+                $prefix = $position->mos . ' - ';
             }
 
             return [
@@ -156,11 +157,27 @@ class _migrator
         $transform = static function ($unit) {
             return [
                 'name' => $unit->name,
-                'description' => $unit->desc,
+                'description' => $unit->desc ?? '',
             ];
         };
 
         $this->migrateItems(\IPS\perscom\Units\CombatUnit::roots(null), 'units', $this->fieldNotInArray('name', $existingUnits), $transform, true);
+        $this->migrateItems(\IPS\perscom\Units\AdministrativeUnit::roots(null), 'units', $this->fieldNotInArray('name', $existingUnits), $transform, true);
+    }
+
+    protected function migrateRosters(): void
+    {
+        $existingGroups = array_map('mb_strtolower', array_column($this->getExistingItems('groups'), 'name'));
+        $transform = static function ($roster) {
+            return [
+                'name' => $roster->name,
+                'desc' => $roster->desc,
+                'order' => $roster->order,
+            ];
+        };
+
+        $rosters = \IPS\perscom\Personnel\Roster::roots(null, null, ['roster_enabled=?', 1]);
+        $this->migrateItems($rosters, 'groups', $this->fieldNotInArray('name', $existingGroups), $transform);
     }
 
     protected function migrateUsers(string $authorEmail, array $filters): void
@@ -181,11 +198,6 @@ class _migrator
         $personnel = \IPS\perscom\Personnel\Soldier::roots(null);
         /** @var \IPS\perscom\Personnel\_Soldier $soldier */
         foreach ($personnel as $id => $soldier) {
-            // TODO: debug, only create me :)
-            if ($soldier->id !== 418) {
-                continue;
-            }
-
             $isStatusBlacklist = in_array($soldier->get_status()->id, $statusBlacklist, true);
             $alreadyExist = in_array(strtolower($soldier->get_email()), $existingUsers, true);
 
@@ -240,14 +252,10 @@ class _migrator
                 continue;
             }
 
-            // TODO: debug, only create me :)
-            if ($soldier->id !== 418) {
-                continue;
-            }
-
             foreach (\IPS\perscom\Records\Assignment::roots(null, null, ['assignment_records_soldier=?', $soldier->id]) as $assignmentRecord) {
                 $assignmentRecordsToCreate[] = $this->transformAssignmentRecord($assignmentRecord, $user['id'], $author['id']);
             }
+            $assignmentRecordsToCreate[] = $this->transformCurrentAssignment($soldier, $user['id'], $author['id']);
 
             foreach (\IPS\perscom\Records\Service::roots(null, null, ['service_records_soldier=?', $soldier->id]) as $serviceRecord) {
                 $record = $this->transformServiceRecord($serviceRecord, $user['id'], $author['id']);
@@ -270,6 +278,10 @@ class _migrator
 
             /** @var \IPS\perscom\Records\_Combat $combatRecord */
             foreach (\IPS\perscom\Records\Combat::roots(null, null, ['combat_records_soldier=?', $soldier->id]) as $combatRecord) {
+                if (empty($combatRecord->text)) {
+                    continue;
+                }
+
                 $record = [
                     'user_id' => $user['id'],
                     'author_id' => $author['id'],
@@ -289,8 +301,6 @@ class _migrator
                     $qualificationRecordsToCreate[] = $record;
                 }
             }
-
-            // TODO: link specialty (MOS)
         }
 
         $this->migrateRecords($serviceRecordsToCreate, 'service');
@@ -343,6 +353,67 @@ class _migrator
                 $record['status_id'] = $knownStatus['id'];
             }
         }
+
+        return $record;
+    }
+
+    /**
+     * @param \IPS\perscom\Personnel\_Soldier $soldier
+     */
+    private function transformCurrentAssignment($soldier, $userId, $authorId): array
+    {
+        $record = [];
+        $record['user_id'] = $userId;
+        $record['author_id'] = $authorId;
+        $record['created_at'] = (new \DateTime())->format(self::DATE_FORMAT);
+
+        $speciality = $this->cache->findBy('specialties', 'name', $soldier->mos, 'strtolower');
+        if ($speciality !== null) {
+            $record['specialty_id'] = $speciality['id'];
+        }
+
+        if ($unit = $soldier->get_combat_unit()) {
+            $knownUnit = $this->cache->findBy('units', 'name', $unit->name, 'strtolower');
+            if ($knownUnit !== null) {
+                $record['unit_id'] = $knownUnit['id'];
+            }
+        }
+
+        if ($position = $soldier->get_combat_unit_position()) {
+            $knownPosition = $this->cache->findBy('positions', 'name', $position->name, 'strtolower');
+            if ($knownPosition !== null) {
+                $record['position_id'] = $knownPosition['id'];
+            }
+        }
+
+        if ($status = $soldier->get_status()) {
+            $knownStatus = $this->cache->findBy('statuses', 'name', $status->name, 'strtolower');
+            if ($knownStatus !== null) {
+                $record['status_id'] = $knownStatus['id'];
+            }
+        }
+
+        $record['secondary_position_ids'] = [];
+        $record['secondary_unit_ids'] = [];
+
+        /** @var \IPS\perscom\Units\_AdministrativeUnitPosition $ipsAdminPosition */
+        foreach ($soldier->get_administrative_unit_positions() as $ipsAdminPosition) {
+            $adminPosition = $this->cache->findBy('positions', 'name', $ipsAdminPosition->mos . ' - ' . $ipsAdminPosition->name, 'strtolower');
+            if ($adminPosition !== null) {
+                $record['secondary_position_ids'][] = $adminPosition['id'];
+            }
+
+            $ipsAdminUnit = $ipsAdminPosition->get_unit();
+            if ($ipsAdminUnit !== null) {
+                $adminUnit = $this->cache->findBy('units', 'name', $ipsAdminUnit->name, 'strtolower');
+                if ($adminUnit !== null) {
+                    $record['secondary_unit_ids'][] = $adminUnit['id'];
+                }
+            }
+        }
+
+        $record['secondary_position_ids'] = array_unique($record['secondary_position_ids']);
+        $record['secondary_unit_ids'] = array_unique($record['secondary_unit_ids']);
 
         return $record;
     }

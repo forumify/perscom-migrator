@@ -33,17 +33,18 @@ class _migrate extends \IPS\Dispatcher\Controller
     {
         \IPS\Output::i()->title = \IPS\Member::loggedIn()->language()->addToStack('menu__perscommigrator_migrate_migrate');
 
+        $apiUrl = 'https://api.perscom.io/v1';
+        $apiKey = $perscomId = $authorEmail = null;
         try {
-            // TODO: delete when releasing
-            // Temporary to speed up development without leaking secrets
-            $data = json_decode(file_get_contents('/var/www/html/perscom_credentials.json'), true, 512, JSON_THROW_ON_ERROR);
-            $apiUrl = $data['api_url'];
-            $apiKey = $data['api_key'];
-            $perscomId = $data['perscom_id'];
-            $authorEmail = $data['author_email'];
+            $credentials =  \IPS\ROOT_PATH . DIRECTORY_SEPARATOR . 'perscom_credentials.json';
+            if (file_exists($credentials)) {
+                $data = json_decode(file_get_contents($credentials), true, 512, JSON_THROW_ON_ERROR);
+                $apiUrl = $data['api_url'];
+                $apiKey = $data['api_key'];
+                $perscomId = $data['perscom_id'];
+                $authorEmail = $data['author_email'];
+            }
         } catch (\Exception $ex) {
-            $apiUrl = 'https://api.perscom.io/v1';
-            $apiKey = $perscomId = $authorEmail = null;
         }
 
         $form = new Form(null, 'perscommigrator__migrate');
