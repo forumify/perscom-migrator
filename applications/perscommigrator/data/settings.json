@@ -1,1 +1,18 @@
-[]
+[
+    {
+        "key": "perscommigrator_api_key",
+        "default": ""
+    },
+    {
+        "key": "perscommigrator_api_url",
+        "default": "https:\/\/api.perscom.io\/v1"
+    },
+    {
+        "key": "perscommigrator_author_email",
+        "default": ""
+    },
+    {
+        "key": "perscommigrator_perscom_id",
+        "default": ""
+    }
+]

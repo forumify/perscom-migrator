@@ -33,27 +33,7 @@ class _migrate extends \IPS\Dispatcher\Controller
     {
         \IPS\Output::i()->title = \IPS\Member::loggedIn()->language()->addToStack('menu__perscommigrator_migrate_migrate');
 
-        $apiUrl = 'https://api.perscom.io/v1';
-        $apiKey = $perscomId = $authorEmail = null;
-        try {
-            $credentials =  \IPS\ROOT_PATH . DIRECTORY_SEPARATOR . 'perscom_credentials.json';
-            if (file_exists($credentials)) {
-                $data = json_decode(file_get_contents($credentials), true, 512, JSON_THROW_ON_ERROR);
-                $apiUrl = $data['api_url'];
-                $apiKey = $data['api_key'];
-                $perscomId = $data['perscom_id'];
-                $authorEmail = $data['author_email'];
-            }
-        } catch (\Exception $ex) {
-        }
-
         $form = new Form(null, 'perscommigrator__migrate');
-        $form->addHeader('perscommigrator__migrate_credentials_header');
-        $form->add(new Form\Text('api_url', $apiUrl, true, [], null, null, '<span class="ipsFieldRow_desc">If you have a staging environment, use "https://api.staging.perscom.io/v1" instead.</span>'));
-        $form->add(new Form\Text('api_key', $apiKey, true, [], null, null, '<span class="ipsFieldRow_desc">Create a new API key on your PERSCOM dashboard, under "System" > "API" > "Keys". <strong>Remember to add all scopes!</strong></span>'));
-        $form->add(new Form\Text('perscom_id', $perscomId, true, [], null, null, '<span class="ipsFieldRow_desc">Can be found on your PERSCOM dashboard, under "System" > "Settings".</span>'));
-        $form->add(new Form\Text('author_email', $authorEmail, true, [], null, null, '<span class="ipsFieldRow_desc">Email of an <strong>existing</strong> PERSCOM.io user, this user will be used as the author of records.</span>'));
-
         $form->addHeader('perscommigrator__migrate_personnel_filter');
         $form->add(new Form\Node('status_blacklist', null, false, [
             'class' => '\IPS\perscom\Personnel\Status',
@@ -66,14 +46,9 @@ class _migrate extends \IPS\Dispatcher\Controller
             return;
         }
 
-        $apiUrl = $values['api_url'];
-        $apiKey = $values['api_key'];
-        $perscomId = $values['perscom_id'];
-        $authorEmail = $values['author_email'];
-
-        $api = new \IPS\perscommigrator\Perscom\Api($apiUrl, $apiKey, $perscomId);
+        $api = new \IPS\perscommigrator\Perscom\Api();
         $migrator = new \IPS\perscommigrator\Migrator\Migrator($api);
-        $result = $migrator->migrate($authorEmail, [
+        $result = $migrator->migrate([
             'status_blacklist' => $values['status_blacklist'] ?: [],
         ]);
 

@@ -2,6 +2,14 @@
     "migrate": {
         "migrate": {
             "migrate_manage": "migrate_manage"
+        },
+        "migrateimages": {
+            "migrateimages_manage": "migrateimages_manage"
+        }
+    },
+    "settings": {
+        "settings": {
+            "settings_manage": "settings_manage"
         }
     }
 }

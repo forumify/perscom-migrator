@@ -27,7 +27,7 @@ class _migrator
         $this->cache = new \IPS\perscommigrator\Migrator\PerscomCache();
     }
 
-    public function migrate(string $authorEmail, array $personnelFilters): \IPS\perscommigrator\Migrator\MigrateResult
+    public function migrate(array $personnelFilters): \IPS\perscommigrator\Migrator\MigrateResult
     {
         $this->migrateResult = (new \IPS\perscommigrator\Migrator\MigrateResult())->start();
 
@@ -40,7 +40,7 @@ class _migrator
             $this->migrateStatuses();
             $this->migrateUnits();
             $this->migrateRosters();
-            $this->migrateUsers($authorEmail, $personnelFilters);
+            $this->migrateUsers($personnelFilters);
         } catch (\Exception $ex) {
             $genericError = new \IPS\perscommigrator\Migrator\ResultItem('');
             $genericError->errorMessages[] = $ex->getMessage();
@@ -180,8 +180,10 @@ class _migrator
         $this->migrateItems($rosters, 'groups', $this->fieldNotInArray('name', $existingGroups), $transform);
     }
 
-    protected function migrateUsers(string $authorEmail, array $filters): void
+    protected function migrateUsers(array $filters): void
     {
+        $authorEmail = \IPS\Settings::i()->perscommigrator_author_email;
+
         $existingUsers = array_map('mb_strtolower', array_column($this->getExistingItems('users'), 'email'));
         $author = $this->cache->findBy('users', 'email', $authorEmail, 'strtolower');
         if ($author === null) {

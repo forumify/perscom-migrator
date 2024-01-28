@@ -1,10 +1,26 @@
 {
+    "settings": {
+        "settings": {
+            "tab": "perscommigrator",
+            "controller": "settings",
+            "do": "",
+            "restriction": "settings_manage",
+            "subcontrollers": ""
+        }
+    },
     "migrate": {
         "migrate": {
             "tab": "perscommigrator",
             "controller": "migrate",
             "do": "",
             "restriction": "migrate_manage",
+            "subcontrollers": ""
+        },
+        "migrateimages": {
+            "tab": "perscommigrator",
+            "controller": "migrateimages",
+            "do": "",
+            "restriction": "migrateimages_manage",
             "subcontrollers": ""
         }
     }

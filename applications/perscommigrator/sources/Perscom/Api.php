@@ -12,11 +12,12 @@ class _api
     protected $apiKey;
     protected $perscomId;
 
-    public function __construct(string $apiUrl, string $apiKey, string $perscomId)
+    public function __construct()
     {
+        $apiUrl = \IPS\Settings::i()->perscommigrator_api_url;
         $this->apiUrl = mb_substr($apiUrl, -1) === '/' ? $apiUrl : $apiUrl . '/';
-        $this->apiKey = $apiKey;
-        $this->perscomId = $perscomId;
+        $this->apiKey = \IPS\Settings::i()->perscommigrator_api_key;
+        $this->perscomId = \IPS\Settings::i()->perscommigrator_perscom_id;
     }
 
     /**
