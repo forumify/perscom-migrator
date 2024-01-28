@@ -257,6 +257,7 @@ class _migrator
             }
             $assignmentRecordsToCreate[] = $this->transformCurrentAssignment($soldier, $user['id'], $author['id']);
 
+            $rankRecordCount = 0;
             foreach (\IPS\perscom\Records\Service::roots(null, null, ['service_records_soldier=?', $soldier->id]) as $serviceRecord) {
                 $record = $this->transformServiceRecord($serviceRecord, $user['id'], $author['id']);
 
@@ -264,6 +265,7 @@ class _migrator
                     case 'rank':
                         unset($record['record_type']);
                         $rankRecordsToCreate[] = $record;
+                        $rankRecordCount++;
                         break;
                     case 'award':
                         unset($record['record_type']);
@@ -273,6 +275,24 @@ class _migrator
                     default:
                         unset($record['record_type']);
                         $serviceRecordsToCreate[] = $record;
+                }
+            }
+
+            if ($rankRecordCount === 0 && $soldier->get_rank() !== null) {
+                $rank = $this->cache->findBy('ranks', 'name', $soldier->get_rank()->name, 'strtolower');
+                if ($rank !== null) {
+                    $rankRecord = [
+                        'user_id' => $user['id'],
+                        'author_id' => $author['id'],
+                        'rank_id' => $rank['id'],
+                        'type' => 0,
+                    ];
+
+                    if ($createdAt = $soldier->get_promotion_date()) {
+                        $rankRecord['created_at'] = $createdAt->format(self::DATE_FORMAT);
+                    }
+
+                    $rankRecordsToCreate[] = $rankRecord;
                 }
             }
 
@@ -557,7 +577,7 @@ class _migrator
     protected function getExistingItems(string $resource): array
     {
         $page = 1;
-        $limit = 100;
+        $limit = 1000;
 
         $items = [];
         do {
