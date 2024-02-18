@@ -27,20 +27,20 @@ class _migrator
         $this->cache = new \IPS\perscommigrator\Migrator\PerscomCache();
     }
 
-    public function migrate(array $personnelFilters): \IPS\perscommigrator\Migrator\MigrateResult
+    public function migrate(array $personnelFilters, bool $skipImages): \IPS\perscommigrator\Migrator\MigrateResult
     {
         $this->migrateResult = (new \IPS\perscommigrator\Migrator\MigrateResult())->start();
 
         try {
-            $this->migrateAwards();
+            $this->migrateAwards($skipImages);
             $this->migratePositions();
-            $this->migrateQualifications();
-            $this->migrateRanks();
+            $this->migrateQualifications($skipImages);
+            $this->migrateRanks($skipImages);
             $this->migrateSpecialties();
             $this->migrateStatuses();
             $this->migrateUnits();
             $this->migrateRosters();
-            $this->migrateUsers($personnelFilters);
+            $this->migrateUsers($personnelFilters, $skipImages);
         } catch (\Exception $ex) {
             $genericError = new \IPS\perscommigrator\Migrator\ResultItem('');
             $genericError->errorMessages[] = $ex->getMessage();
@@ -50,7 +50,7 @@ class _migrator
         return $this->migrateResult->end();
     }
 
-    protected function migrateAwards(): void
+    protected function migrateAwards(bool $skipImages): void
     {
         $existingAwards = array_map('mb_strtolower', array_column($this->getExistingItems('awards'), 'name'));
         $transform = static function ($award) {
@@ -60,7 +60,40 @@ class _migrator
             ];
         };
 
-        $this->migrateItems(\IPS\perscom\Awards\Category::roots(null), 'awards', $this->fieldNotInArray('name', $existingAwards), $transform);
+        $awardCategories = \IPS\perscom\Awards\Category::roots(null);
+        $this->migrateItems($awardCategories, 'awards', $this->fieldNotInArray('name', $existingAwards), $transform);
+
+        if ($skipImages) {
+            return;
+        }
+
+        $migrateItem = new \IPS\perscommigrator\Migrator\ResultItem('award image');
+        foreach ($awardCategories as $awardCategory) {
+            foreach ($awardCategory->children(null) as $award) {
+                if (empty($award->image)) {
+                    $migrateItem->skipped++;
+                    continue;
+                }
+
+                $existingAward = $this->cache->findBy('awards', 'name', $award->name, 'strtolower');
+                if ($existingAward === null || empty($existingAward['id'])) {
+                    $migrateItem->skipped++;
+                    continue;
+                }
+
+                try {
+                    $file = \IPS\File::get('perscom_Awards', $award->image);
+                    $this->api->uploadImage('awards/' . $existingAward['id'] . '/image', $file);
+                    $migrateItem->created++;
+                } catch (\IPS\perscommigrator\Exception\FileNotExistsException $ex) {
+                    $migrateItem->skipped++;
+                } catch (\Exception $ex) {
+                    $migrateItem->error++;
+                    $migrateItem->errorMessages[] = $ex->getMessage();
+                }
+            }
+        }
+        $this->migrateResult->items[] = $migrateItem;
     }
 
     protected function migratePositions(): void
@@ -82,7 +115,7 @@ class _migrator
         $this->migrateItems(\IPS\perscom\Units\CombatUnitPosition::roots(null), 'positions', $this->fieldNotInArray('name', $existingPositions), $transform);
     }
 
-    protected function migrateQualifications(): void
+    protected function migrateQualifications(bool $skipImages): void
     {
         $existingQualifications = array_map('mb_strtolower', array_column($this->getExistingItems('qualifications'), 'name'));
         $transform = static function ($qualification) {
@@ -92,10 +125,43 @@ class _migrator
             ];
         };
 
-        $this->migrateItems(\IPS\perscom\Qualifications\Category::roots(null), 'qualifications', $this->fieldNotInArray('name', $existingQualifications), $transform);
+        $qualificationCategories = \IPS\perscom\Qualifications\Category::roots(null);
+        $this->migrateItems($qualificationCategories, 'qualifications', $this->fieldNotInArray('name', $existingQualifications), $transform);
+
+        if ($skipImages) {
+            return;
+        }
+
+        $migrateItem = new \IPS\perscommigrator\Migrator\ResultItem('qualification image');
+        foreach ($qualificationCategories as $qualificationCategory) {
+            foreach ($qualificationCategory->children(null) as $qualification) {
+                if (empty($qualification->image)) {
+                    $migrateItem->skipped++;
+                    continue;
+                }
+
+                $existingQualification = $this->cache->findBy('qualifications', 'name', $qualification->name, 'strtolower');
+                if ($existingQualification === null || empty($existingQualification['id'])) {
+                    $migrateItem->skipped++;
+                    continue;
+                }
+
+                try {
+                    $file = \IPS\File::get('perscom_Qualification', $qualification->image);
+                    $this->api->uploadImage('qualifications/' . $existingQualification['id'] . '/image', $file);
+                    $migrateItem->created++;
+                } catch (\IPS\perscommigrator\Exception\FileNotExistsException $ex) {
+                    $migrateItem->skipped++;
+                } catch (\Exception $ex) {
+                    $migrateItem->error++;
+                    $migrateItem->errorMessages[] = $ex->getMessage();
+                }
+            }
+        }
+        $this->migrateResult->items[] = $migrateItem;
     }
 
-    protected function migrateRanks(): void
+    protected function migrateRanks(bool $skipImages): void
     {
         $existingRanks = array_map('mb_strtolower', array_column($this->getExistingItems('ranks'), 'name'));
         $transform = static function ($rank) {
@@ -107,7 +173,40 @@ class _migrator
             ];
         };
 
-        $this->migrateItems(\IPS\perscom\Ranks\Category::roots(null), 'ranks', $this->fieldNotInArray('name', $existingRanks), $transform);
+        $rankCategories = \IPS\perscom\Ranks\Category::roots(null);
+        $this->migrateItems($rankCategories, 'ranks', $this->fieldNotInArray('name', $existingRanks), $transform);
+
+        if ($skipImages) {
+            return;
+        }
+
+        $migrateItem = new \IPS\perscommigrator\Migrator\ResultItem('rank image');
+        foreach ($rankCategories as $rankCategory) {
+            foreach ($rankCategory->children(null) as $rank) {
+                if (empty($rank->image_large)) {
+                    $migrateItem->skipped++;
+                    continue;
+                }
+
+                $exitingRank = $this->cache->findBy('ranks', 'name', $rank->name, 'strtolower');
+                if ($exitingRank === null || empty($exitingRank['id'])) {
+                    $migrateItem->skipped++;
+                    continue;
+                }
+
+                try {
+                    $file = \IPS\File::get('perscom_Ranks', $rank->image_large);
+                    $this->api->uploadImage('ranks/' . $exitingRank['id'] . '/image', $file);
+                    $migrateItem->created++;
+                } catch (\IPS\perscommigrator\Exception\FileNotExistsException $ex) {
+                    $migrateItem->skipped++;
+                } catch (\Exception $ex) {
+                    $migrateItem->error++;
+                    $migrateItem->errorMessages[] = $ex->getMessage();
+                }
+            }
+        }
+        $this->migrateResult->items[] = $migrateItem;
     }
 
     protected function migrateSpecialties(): void
@@ -180,7 +279,7 @@ class _migrator
         $this->migrateItems($rosters, 'groups', $this->fieldNotInArray('name', $existingGroups), $transform);
     }
 
-    protected function migrateUsers(array $filters): void
+    protected function migrateUsers(array $filters, bool $skipImages): void
     {
         $authorEmail = \IPS\Settings::i()->perscommigrator_author_email;
 
@@ -251,6 +350,11 @@ class _migrator
             /** @var \IPS\perscom\Personnel\_Soldier $soldier */
             $soldier = $findSoldier($user['email']);
             if ($soldier === null || $user['status_id'] !== null) {
+                continue;
+            }
+
+            $isStatusBlacklist = in_array($soldier->get_status()->id, $statusBlacklist, true);
+            if ($isStatusBlacklist) {
                 continue;
             }
 
@@ -331,6 +435,45 @@ class _migrator
         $this->migrateRecords($rankRecordsToCreate, 'rank');
         $this->migrateRecords($combatRecordsToCreate, 'combat');
         $this->migrateRecords($qualificationRecordsToCreate, 'qualification');
+
+        if ($skipImages) {
+            return;
+        }
+
+        $migrateItem = new \IPS\perscommigrator\Migrator\ResultItem('uniform image');
+        foreach ($this->cache->get('users') as $user) {
+            /** @var \IPS\perscom\Personnel\_Soldier $soldier */
+            $soldier = $findSoldier($user['email']);
+            if ($soldier === null || $user['cover_photo'] !== null) {
+                $migrateItem->skipped++;
+                continue;
+            }
+
+            $isStatusBlacklist = in_array($soldier->get_status()->id, $statusBlacklist, true);
+            if ($isStatusBlacklist) {
+                $migrateItem->skipped++;
+                continue;
+            }
+
+            /** @var \IPS\perscom\Personnel\_Uniform $uniform */
+            $uniform = $soldier->get_uniform();
+            if ($uniform === null) {
+                $migrateItem->skipped++;
+                continue;
+            }
+
+            try {
+                $file = \IPS\File::get('perscom_Uniform', $uniform->url);
+                $this->api->uploadCoverPhoto($user['id'], $file);
+                $migrateItem->created++;
+            } catch (\IPS\perscommigrator\Exception\FileNotExistsException $ex) {
+                $migrateItem->skipped++;
+            } catch (\Exception $ex) {
+                $migrateItem->error++;
+                $migrateItem->errorMessages[] = $ex->getMessage();
+            }
+        }
+        $this->migrateResult->items[] = $migrateItem;
     }
 
     private function migrateRecords(array $records, string $type): void

@@ -15,13 +15,6 @@
             "do": "",
             "restriction": "migrate_manage",
             "subcontrollers": ""
-        },
-        "migrateimages": {
-            "tab": "perscommigrator",
-            "controller": "migrateimages",
-            "do": "",
-            "restriction": "migrateimages_manage",
-            "subcontrollers": ""
         }
     }
 }

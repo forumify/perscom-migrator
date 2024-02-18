@@ -34,6 +34,8 @@ class _migrate extends \IPS\Dispatcher\Controller
         \IPS\Output::i()->title = \IPS\Member::loggedIn()->language()->addToStack('menu__perscommigrator_migrate_migrate');
 
         $form = new Form(null, 'perscommigrator__migrate');
+        $form->addHeader('perscommigrator__migrate_settings');
+        $form->add(new Form\YesNo('skip_images', false, false, [], null, null, '<span class="ipsFieldRow_desc">Uploading hundreds of images may be slow. If an image already exists on PERSCOM.io, an error will be thrown. This error can be ignored.</span>'));
         $form->addHeader('perscommigrator__migrate_personnel_filter');
         $form->add(new Form\Node('status_blacklist', null, false, [
             'class' => '\IPS\perscom\Personnel\Status',
@@ -50,7 +52,7 @@ class _migrate extends \IPS\Dispatcher\Controller
         $migrator = new \IPS\perscommigrator\Migrator\Migrator($api);
         $result = $migrator->migrate([
             'status_blacklist' => $values['status_blacklist'] ?: [],
-        ]);
+        ], $values['skip_images']);
 
         \IPS\Output::i()->output = \IPS\Theme::i()->getTemplate('migrate', 'perscommigrator', 'admin')->migrateComplete($result);
     }

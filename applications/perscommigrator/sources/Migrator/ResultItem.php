@@ -6,11 +6,11 @@ namespace IPS\perscommigrator\Migrator;
 
 class _resultItem
 {
-    public string $entityName;
-    public int $created = 0;
-    public int $skipped = 0;
-    public int $error = 0;
-    public array $errorMessages = [];
+    public $entityName;
+    public $created = 0;
+    public $skipped = 0;
+    public $error = 0;
+    public $errorMessages = [];
 
     public function __construct(string $entityName)
     {

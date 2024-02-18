@@ -9,9 +9,10 @@ Please double-check all users and keep a backup of your old PERSCOM data in case
 
 1. Download the latest version in [releases](https://github.com/forumify/perscom-migrator/releases),
 2. Upload & install the application through your Invision Community AdminCP,
-3. A new AdminCP menu entry has been added, navigate to it,
-4. Carefully read the instructions, fill in your PERSCOM.io credentials, set up the user filters, and press migrate.
+3. A new AdminCP menu entry has been added, navigate to settings and configure your PERSCOM.io credentials,
+4. Select "Migrate Data" first, carefully read the instructions, and press migrate.
 5. Sit back with a cup of coffee, this may take a while depending on the amount of data.
+6. (Optionally) Select "Migrate Images" if you also want images to be migrated.
 
 If you run into any errors, please create an [issue here](https://github.com/forumify/perscom-migrator/issues).
 

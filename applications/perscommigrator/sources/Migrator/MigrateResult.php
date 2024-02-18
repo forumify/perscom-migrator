@@ -6,9 +6,9 @@ namespace IPS\perscommigrator\Migrator;
 
 class _migrateResult
 {
-    public int $started = 0;
-    public int $ended = 0;
-    public array $items = [];
+    public $started = 0;
+    public $ended = 0;
+    public $items = [];
 
     public function start(): self
     {

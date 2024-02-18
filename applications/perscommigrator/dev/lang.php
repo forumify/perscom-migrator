@@ -15,8 +15,9 @@ $lang = array(
 
     'menu__perscommigrator_migrate' => 'Migrate',
     'menu__perscommigrator_migrate_migrate' => 'Migrate Data',
-    'menu__perscommigrator_migrate_migrateimages' => 'Migrate Images',
     'perscommigrator__migrate' => 'Start migration',
+    'perscommigrator__migrate_settings' => 'Migration settings',
+    'skip_images' => 'Skip images',
     'perscommigrator__migrate_personnel_filter' => 'Personnel filters',
     'status_blacklist' => 'Personnel status blacklist',
 );

@@ -31,7 +31,83 @@ class _api
             ? $request->$method(is_array($args[1]) ? json_encode($args[1], JSON_THROW_ON_ERROR) : $args[1])
             : $request->$method();
 
-        usleep(600);
+        return $this->handleResponse($response);
+    }
+
+    /**
+     * @throws \Exception
+     */
+    public function uploadImage(string $resource, $file)
+    {
+        $path = $this->getPathFromFile($file);
+        $ext = pathinfo($path, PATHINFO_EXTENSION);
+        $newFilename = uniqid('', false) . '.' . $ext;
+
+        $request = $this->prepareRequest($resource, [
+            'Content-Type' => 'multipart/form-data',
+        ]);
+
+        $response = $request->post([
+            'name' => $newFilename,
+            'image' => new \CURLFile($path, '', $newFilename),
+        ]);
+
+        $this->handleResponse($response);
+    }
+
+    /**
+     * @throws \Exception
+     */
+    public function uploadCoverPhoto($userId, $file)
+    {
+        $path = $this->getPathFromFile($file);
+        $ext = pathinfo($path, PATHINFO_EXTENSION);
+        $newFilename = uniqid('', false) . '.' . $ext;
+
+        $request = $this->prepareRequest('users/' . $userId, [
+            'Content-Type' => 'multipart/form-data',
+        ]);
+
+        $response = $request->post([
+            '_method' => 'put',
+            'cover_photo' => new \CURLFile($path, '', $newFilename),
+        ]);
+
+        $this->handleResponse($response);
+    }
+
+    /**
+     * @param \IPS\File $file
+     */
+    protected function getPathFromFile($file)
+    {
+        $path = $file->configuration['dir'] . DIRECTORY_SEPARATOR . $file->container . DIRECTORY_SEPARATOR . $file->filename;
+        if (!file_exists($path)) {
+            throw new \IPS\perscommigrator\Exception\FileNotExistsException('File ' . $path . ' does not exist!');
+        }
+
+        return $path;
+    }
+
+    protected function prepareRequest(string $endpoint, array $headers = [])
+    {
+        $request = \IPS\Http\Url::external($this->apiUrl . $endpoint)->request();
+        $request->setHeaders($this->headers($headers));
+
+        return $request;
+    }
+
+    protected function handleResponse($response)
+    {
+        $limit = 0;
+        if (!empty($response->httpHeaders['X-RateLimit-Remaining'])) {
+            $limit = $response->httpHeaders['X-RateLimit-Remaining'];
+        }
+
+        if ($limit < 100) {
+            // slow down there cowboy
+            sleep(1);
+        }
 
         if ($response->httpResponseCode >= 400) {
             throw new \RuntimeException('Error in API request: ' . $response->content);
@@ -42,17 +118,15 @@ class _api
             : null;
     }
 
-    protected function prepareRequest(string $endpoint)
+    protected function headers(array $overwrite)
     {
-        $request = \IPS\Http\Url::external($this->apiUrl . $endpoint)->request();
-        $request->setHeaders([
+        return array_merge([
             'Content-Type' => 'application/json',
             'Accept' => 'application/json',
             'Authorization' => 'Bearer ' . $this->apiKey,
             'X-Perscom-Id' => $this->perscomId,
             'X-Perscom-Notifications' => 'false',
-        ]);
-
-        return $request;
+            'X-Perscom-Bypass-Cache' => 'true'
+        ], $overwrite);
     }
 }
