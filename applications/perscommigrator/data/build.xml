@@ -1,4 +1,9 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <build>
- <module key="admin/migrate"><![CDATA[{"default_controller":"","protected":false,"default":null}]]></module>
+ <module key="admin/migrate"><![CDATA[{"default_controller":"","protected":0,"default":0}]]></module>
+ <module key="admin/settings"><![CDATA[{"default_controller":"","protected":0,"default":1}]]></module>
+ <setting key="perscommigrator_api_key"><![CDATA[{"key":"perscommigrator_api_key","default":""}]]></setting>
+ <setting key="perscommigrator_api_url"><![CDATA[{"key":"perscommigrator_api_url","default":"https:\/\/api.perscom.io\/v1"}]]></setting>
+ <setting key="perscommigrator_author_email"><![CDATA[{"key":"perscommigrator_author_email","default":""}]]></setting>
+ <setting key="perscommigrator_perscom_id"><![CDATA[{"key":"perscommigrator_perscom_id","default":""}]]></setting>
 </build>

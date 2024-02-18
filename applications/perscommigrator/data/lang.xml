@@ -1,17 +1,21 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <language>
- <app key="perscommigrator" version="10000">
+ <app key="perscommigrator" version="10100">
   <word key="__app_perscommigrator" js="0">PERSCOM.io Migrator</word>
   <word key="menutab__perscommigrator" js="0">PERSCOM Migrator</word>
   <word key="menutab__perscommigrator_icon" js="0">exchange</word>
-  <word key="menu__perscommigrator_migrate" js="0">Migrate</word>
-  <word key="menu__perscommigrator_migrate_migrate" js="0">Migrate PERSCOM</word>
-  <word key="perscommigrator__migrate" js="0">Start migration</word>
+  <word key="menu__perscommigrator_settings" js="0">Settings</word>
+  <word key="menu__perscommigrator_settings_settings" js="0">Settings</word>
   <word key="perscommigrator__migrate_credentials_header" js="0">PERSCOM.io credentials</word>
-  <word key="perscom_id" js="0">PERSCOM ID</word>
-  <word key="api_url" js="0">API URL</word>
-  <word key="api_key" js="0">API Key</word>
-  <word key="author_email" js="0">Author email</word>
+  <word key="perscommigrator_perscom_id" js="0">PERSCOM ID</word>
+  <word key="perscommigrator_api_url" js="0">API URL</word>
+  <word key="perscommigrator_api_key" js="0">API Key</word>
+  <word key="perscommigrator_author_email" js="0">Author email</word>
+  <word key="menu__perscommigrator_migrate" js="0">Migrate</word>
+  <word key="menu__perscommigrator_migrate_migrate" js="0">Migrate Data</word>
+  <word key="perscommigrator__migrate" js="0">Start migration</word>
+  <word key="perscommigrator__migrate_settings" js="0">Migration settings</word>
+  <word key="skip_images" js="0">Skip images</word>
   <word key="perscommigrator__migrate_personnel_filter" js="0">Personnel filters</word>
   <word key="status_blacklist" js="0">Personnel status blacklist</word>
  </app>
