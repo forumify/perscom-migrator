@@ -10,9 +10,8 @@ Please double-check all users and keep a backup of your old PERSCOM data in case
 1. Download the latest version in [releases](https://github.com/forumify/perscom-migrator/releases),
 2. Upload & install the application through your Invision Community AdminCP,
 3. A new AdminCP menu entry has been added, navigate to settings and configure your PERSCOM.io credentials,
-4. Select "Migrate Data" first, carefully read the instructions, and press migrate.
+4. Select "Migrate Data", carefully read the instructions, and press migrate,
 5. Sit back with a cup of coffee, this may take a while depending on the amount of data.
-6. (Optionally) Select "Migrate Images" if you also want images to be migrated.
 
 If you run into any errors, please create an [issue here](https://github.com/forumify/perscom-migrator/issues).
 
@@ -28,15 +27,6 @@ To develop on this application:
 2. Download Invision Community and drop all the files into this repository (keep files that are going to be overwritten),
 3. Download the Invision Community SDK and drop all files into this repository,
 4. Run Invision Community and do first time setup (recommend to run using docker, docker-compose.yml provided in this repo),
-5. Download the PERSCOM application and install using AdminCP,
-6. To speed up development and prefill the credentials form, create a `perscom_credentials.json` file in the root of the repository with the following content:
-```json
-{
-  "api_url": "https://api<.staging>.perscom.io/v1",
-  "api_key": "<your api key>",
-  "perscom_id": "<your PERSCOM id>",
-  "author_email": "<an email that has a user on your PERSCOM.io instance>"
-}
-```
+5. Download the PERSCOM application and install using AdminCP.
 
 [This application is licensed under the MIT license](/LICENSE.md). We are not liable for any lost data, nor do we provide any warranty.
