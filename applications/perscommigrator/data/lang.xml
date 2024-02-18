@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <language>
- <app key="perscommigrator" version="10102">
+ <app key="perscommigrator" version="10103">
   <word key="__app_perscommigrator" js="0">PERSCOM.io Migrator</word>
   <word key="menutab__perscommigrator" js="0">PERSCOM Migrator</word>
   <word key="menutab__perscommigrator_icon" js="0">exchange</word>
