@@ -499,6 +499,9 @@ class _migrator
             $type . '-records',
             [$this, 'alwaysTrue'],
             [$this, 'identity'],
+            false,
+            null,
+            false
         );
     }
 
@@ -687,7 +690,8 @@ class _migrator
         callable $shouldCreate,
         callable $transform,
         bool $includeParents = false,
-        $resultItem = null
+        $resultItem = null,
+        bool $updateCache = true
     ): void {
         $toplevel = false;
         if ($resultItem === null) {
@@ -727,7 +731,7 @@ class _migrator
         }
 
         if ($toplevel) {
-            if (!empty($itemsToCreate)) {
+            if ($updateCache && !empty($itemsToCreate)) {
                 // update cache with newly created resources
                 $this->getExistingItems($resource);
             }

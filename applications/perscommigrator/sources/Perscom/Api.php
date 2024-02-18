@@ -91,7 +91,7 @@ class _api
 
     protected function prepareRequest(string $endpoint, array $headers = [])
     {
-        $request = \IPS\Http\Url::external($this->apiUrl . $endpoint)->request();
+        $request = \IPS\Http\Url::external($this->apiUrl . $endpoint)->request(600);
         $request->setHeaders($this->headers($headers));
 
         return $request;
