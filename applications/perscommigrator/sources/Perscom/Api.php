@@ -99,15 +99,8 @@ class _api
 
     protected function handleResponse($response)
     {
-        $limit = 0;
-        if (!empty($response->httpHeaders['X-RateLimit-Remaining'])) {
-            $limit = $response->httpHeaders['X-RateLimit-Remaining'];
-        }
-
-        if ($limit < 100) {
-            // slow down there cowboy
-            sleep(1);
-        }
+        // cooldown to prevent blowing up PERSCOM's API
+        sleep(1);
 
         if ($response->httpResponseCode >= 400) {
             throw new \RuntimeException('Error in API request: ' . $response->content);

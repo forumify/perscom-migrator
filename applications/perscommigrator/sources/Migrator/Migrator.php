@@ -718,7 +718,7 @@ class _migrator
 
         if (!empty($itemsToCreate)) {
             try {
-                foreach (array_chunk($itemsToCreate, 1000) as $chunk) {
+                foreach (array_chunk($itemsToCreate, 250) as $chunk) {
                     $this->api->post($resource . '/batch', [
                         'resources' => $chunk,
                     ]);
