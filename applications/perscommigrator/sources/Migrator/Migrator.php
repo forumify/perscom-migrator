@@ -299,8 +299,16 @@ class _migrator
         $personnel = \IPS\perscom\Personnel\Soldier::roots(null);
         /** @var \IPS\perscom\Personnel\_Soldier $soldier */
         foreach ($personnel as $id => $soldier) {
-            $isStatusBlacklist = in_array($soldier->get_status()->id, $statusBlacklist, true);
-            $alreadyExist = in_array(strtolower($soldier->get_email()), $existingUsers, true);
+            if (($member = $soldier->get_member()) === null) {
+                continue;
+            }
+
+            if (($status = $soldier->get_status()) === null) {
+                continue;
+            }
+
+            $isStatusBlacklist = in_array($status->id, $statusBlacklist, true);
+            $alreadyExist = in_array(strtolower($member->email), $existingUsers, true);
 
             if ($isStatusBlacklist || $alreadyExist) {
                 $resultItem->skipped++;
@@ -309,7 +317,7 @@ class _migrator
 
             $data = [];
             $data['name'] = $soldier->firstname . ' ' . $soldier->lastname;
-            $data['email'] = $soldier->get_email();
+            $data['email'] = $member->email;
 
             $data['email_verified_at'] = (new \DateTime())->format(self::DATE_FORMAT);
             if ($soldier->get_induction_date()) {
@@ -332,7 +340,11 @@ class _migrator
 
         $findSoldier = function ($email) use ($personnel) {
             foreach ($personnel as $soldier) {
-                if (strtolower($soldier->get_email()) === strtolower($email)) {
+                if (($member = $soldier->get_member()) === null) {
+                    continue;
+                }
+
+                if (strtolower($member->email) === strtolower($email)) {
                     return $soldier;
                 }
             }
@@ -353,7 +365,11 @@ class _migrator
                 continue;
             }
 
-            $isStatusBlacklist = in_array($soldier->get_status()->id, $statusBlacklist, true);
+            if (($status = $soldier->get_status()) === null) {
+                continue;
+            }
+
+            $isStatusBlacklist = in_array($status->id, $statusBlacklist, true);
             if ($isStatusBlacklist) {
                 continue;
             }
