@@ -377,7 +377,7 @@ class _migrator
             foreach (\IPS\perscom\Records\Assignment::roots(null, null, ['assignment_records_soldier=?', $soldier->id]) as $assignmentRecord) {
                 $assignmentRecordsToCreate[] = $this->transformAssignmentRecord($assignmentRecord, $user['id'], $author['id']);
             }
-            $assignmentRecordsToCreate[] = $this->transformCurrentAssignment($soldier, $user['id'], $author['id']);
+            $this->addCurrentCurrentAssignments($soldier, $user['id'], $author['id'], $assignmentRecordsToCreate);
 
             $rankRecordCount = 0;
             foreach (\IPS\perscom\Records\Service::roots(null, null, ['service_records_soldier=?', $soldier->id]) as $serviceRecord) {
@@ -544,12 +544,13 @@ class _migrator
     /**
      * @param \IPS\perscom\Personnel\_Soldier $soldier
      */
-    private function transformCurrentAssignment($soldier, $userId, $authorId): array
+    private function addCurrentCurrentAssignments($soldier, $userId, $authorId, &$assignments): void
     {
         $record = [];
         $record['user_id'] = $userId;
         $record['author_id'] = $authorId;
         $record['created_at'] = (new \DateTime())->format(self::DATE_FORMAT);
+        $record['type'] = 'primary';
 
         $speciality = $this->cache->findBy('specialties', 'name', $soldier->mos, 'strtolower');
         if ($speciality !== null) {
@@ -576,30 +577,31 @@ class _migrator
                 $record['status_id'] = $knownStatus['id'];
             }
         }
-
-        $record['secondary_position_ids'] = [];
-        $record['secondary_unit_ids'] = [];
+        $assignments[] = $record;
 
         /** @var \IPS\perscom\Units\_AdministrativeUnitPosition $ipsAdminPosition */
         foreach ($soldier->get_administrative_unit_positions() as $ipsAdminPosition) {
+            $record = [];
+            $record['user_id'] = $userId;
+            $record['author_id'] = $authorId;
+            $record['created_at'] = (new \DateTime())->format(self::DATE_FORMAT);
+            $record['type'] = 'secondary';
+
             $adminPosition = $this->cache->findBy('positions', 'name', $ipsAdminPosition->mos . ' - ' . $ipsAdminPosition->name, 'strtolower');
             if ($adminPosition !== null) {
-                $record['secondary_position_ids'][] = $adminPosition['id'];
+                $record['position_id'] = $adminPosition['id'];
             }
 
             $ipsAdminUnit = $ipsAdminPosition->get_unit();
             if ($ipsAdminUnit !== null) {
                 $adminUnit = $this->cache->findBy('units', 'name', $ipsAdminUnit->name, 'strtolower');
                 if ($adminUnit !== null) {
-                    $record['secondary_unit_ids'][] = $adminUnit['id'];
+                    $record['unit_id'] = $adminUnit['id'];
                 }
             }
+
+            $assignments[] = $record;
         }
-
-        $record['secondary_position_ids'] = array_unique($record['secondary_position_ids']);
-        $record['secondary_unit_ids'] = array_unique($record['secondary_unit_ids']);
-
-        return $record;
     }
 
     /**
